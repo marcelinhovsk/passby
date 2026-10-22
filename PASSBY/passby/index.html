@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassBy - Acessibilidade Urbana</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <a class="brand" href="index.html" aria-label="PassBy - início">
+            <h1>PassBy</h1>
+            <p>Acessibilidade urbana, para todos.</p>
+        </a>
+    </header>
+    <nav>
+        <a href="index.html" class="active" aria-current="page">Início</a>
+        <a href="sobre.html">Sobre Nós</a>
+        <a href="mapa.html">Mapa de Passadeiras</a>
+        <a href="redes.html">Redes sociais</a>
+        <a href="contato.html">Contacto</a>
+    </nav>
+    <section class="hero">
+        <div class="hero-content">
+            <p class="eyebrow">Leiria é de todos. Bora cuidar dela?</p>
+            <h2>A tua cidade. O teu olhar. A mudança começa contigo.</h2>
+            <p>Descobre passadeiras com problemas, marca no mapa e ajuda a tornar cada caminho mais acessível.</p>
+            <a href="mapa.html" class="btn">Entrar no mapa <span aria-hidden="true">→</span></a>
+            <a href="redes.html" class="hero-secondary">Segue o movimento <span aria-hidden="true">↗</span></a>
+        </div>
+    </section>
+    <section class="impact" aria-label="Impacto da comunidade">
+        <div class="impact-intro">
+            <span class="impact-icon" aria-hidden="true">✳</span>
+            <div>
+                <p class="eyebrow">Impacto coletivo</p>
+                <h2>Cada relato conta.</h2>
+            </div>
+        </div>
+        <div class="impact-stat">
+            <strong id="report-count">—</strong>
+            <span>relatos no mapa</span>
+        </div>
+        <div class="impact-stat">
+            <strong id="top-issue">—</strong>
+            <span>problema mais reportado</span>
+        </div>
+        <a href="mapa.html" class="impact-link">Ver os relatos <span aria-hidden="true">→</span></a>
+        <p class="impact-note" id="impact-note" aria-live="polite"></p>
+    </section>
+    <section class="section section-community">
+        <div class="section-heading">
+            <p class="eyebrow">Uma missão simples</p>
+            <h2>Vê. Marca. Muda.</h2>
+            <p>Uma observação tua pode ajudar a tua comunidade a perceber onde a cidade precisa de melhorar.</p>
+        </div>
+        <div class="features">
+            <div class="feature">
+                <span class="feature-number" aria-hidden="true">01</span>
+                <h3>Repara</h3>
+                <p>Há rampas bloqueadas, passeios danificados ou passadeiras difíceis de atravessar?</p>
+            </div>
+            <div class="feature">
+                <span class="feature-number" aria-hidden="true">02</span>
+                <h3>Partilha</h3>
+                <p>Marca o local, escolhe o problema e explica o que está a acontecer.</p>
+            </div>
+            <div class="feature">
+                <span class="feature-number" aria-hidden="true">03</span>
+                <h3>Faz circular</h3>
+                <p>Mostra o PassBy a alguém. Quanto mais olhares atentos, melhor o mapa.</p>
+            </div>
+        </div>
+    </section>
+    <section class="community-cta">
+        <div>
+            <p class="eyebrow">Faz parte do movimento</p>
+            <h2>Uma cidade melhor não se faz sozinha.</h2>
+            <p>Segue o PassBy no Instagram e partilha o que gostavas de mudar no teu bairro.</p>
+        </div>
+        <a class="btn" href="redes.html">Encontrar-nos online <span aria-hidden="true">↗</span></a>
+    </section>
+    <footer>
+        <p>&copy; 2026 PassBy. Mobilidade urbana mais inclusiva.</p>
+    </footer>
+    <script>
+        fetch('listar_marcadores.php')
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Os relatos não estão disponíveis.');
+                }
+                return response.json();
+            })
+            .then((reports) => {
+                const issueNames = {
+                    acesso: 'Acesso',
+                    estado: 'Conservação',
+                    sinalizacao: 'Sinalização',
+                    outro: 'Outros'
+                };
+                const counts = reports.reduce((totals, report) => {
+                    totals[report.type] = (totals[report.type] || 0) + 1;
+                    return totals;
+                }, {});
+                const topIssue = Object.entries(counts).sort((first, second) => second[1] - first[1])[0];
+                document.getElementById('report-count').textContent = reports.length.toLocaleString('pt-PT');
+                document.getElementById('top-issue').textContent = topIssue ? issueNames[topIssue[0]] : 'Por descobrir';
+                if (reports.length === 0) {
+                    document.getElementById('impact-note').textContent = 'Sê a primeira pessoa a colocar um relato no mapa.';
+                }
+            })
+            .catch(() => {
+                document.getElementById('report-count').textContent = '—';
+                document.getElementById('top-issue').textContent = '—';
+                document.getElementById('impact-note').textContent = 'Não foi possível carregar os dados do mapa.';
+            });
+    </script>
+</body>
+
+</html>

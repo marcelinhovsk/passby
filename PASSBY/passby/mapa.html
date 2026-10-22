@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Consulte o mapa de acessibilidade do PassBy e reporte problemas em passadeiras de Leiria.">
+    <title>Mapa de Passadeiras - PassBy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body>
+    <header>
+        <a class="brand" href="index.html" aria-label="PassBy - início">
+            <h1>PassBy</h1>
+            <p>Acessibilidade urbana, para todos.</p>
+        </a>
+    </header>
+    <nav>
+        <a href="index.html">Início</a>
+        <a href="sobre.html">Sobre Nós</a>
+        <a href="mapa.html" class="active" aria-current="page">Mapa de Passadeiras</a>
+        <a href="redes.html">Redes sociais</a>
+        <a href="contato.html">Contacto</a>
+    </nav>
+
+    <main class="container">
+        <h2>Mapa de acessibilidade</h2>
+        <p class="map-intro">Explore a zona de Leiria. Se encontrar uma passadeira que precise de atenção, assinale o local no mapa e envie um relato.</p>
+        <div id="map" role="application" aria-label="Mapa interativo de Leiria. Clique para escolher o local do problema."></div>
+        <p class="map-hint" id="map-message" aria-live="polite">Clique no mapa para marcar a localização do problema. Também pode usar a sua localização atual.</p>
+
+        <form action="processar_marcador.php" method="post" enctype="multipart/form-data">
+            <h3>Reportar um problema</h3>
+            <p class="form-intro">A localização é obrigatória para que a entidade responsável possa encontrar a passadeira.</p>
+
+            <div class="coordinate-grid">
+                <div>
+                    <label for="latitude">Latitude</label>
+                    <input type="number" id="latitude" name="latitude" min="-90" max="90" step="0.000001" readonly required>
+                </div>
+                <div>
+                    <label for="longitude">Longitude</label>
+                    <input type="number" id="longitude" name="longitude" min="-180" max="180" step="0.000001" readonly required>
+                </div>
+                <button class="secondary-button" type="button" id="locate-me">Usar a minha localização</button>
+            </div>
+
+            <fieldset>
+                <legend>Tipo de problema</legend>
+                <div class="problema-tipo">
+                    <input type="radio" id="problema_acesso" name="tipo_problema" value="acesso" required>
+                    <label for="problema_acesso">Problema de acesso</label>
+                </div>
+                <div class="problema-tipo">
+                    <input type="radio" id="problema_estado" name="tipo_problema" value="estado">
+                    <label for="problema_estado">Mau estado de conservação</label>
+                </div>
+                <div class="problema-tipo">
+                    <input type="radio" id="problema_sinalizacao" name="tipo_problema" value="sinalizacao">
+                    <label for="problema_sinalizacao">Falta de sinalização</label>
+                </div>
+                <div class="problema-tipo">
+                    <input type="radio" id="problema_outro" name="tipo_problema" value="outro">
+                    <label for="problema_outro">Outro problema</label>
+                </div>
+            </fieldset>
+
+            <label for="descricao">Descrição do problema</label>
+            <textarea id="descricao" name="descricao" rows="4" maxlength="3000" required placeholder="Descreva o problema e como afeta a passagem..."></textarea>
+
+            <div class="image-upload">
+                <label for="imagens">Fotografias (opcional)</label>
+                <input type="file" id="imagens" name="imagens[]" accept="image/jpeg,image/png,image/webp" multiple>
+                <p><small>Até 3 fotografias JPG, PNG ou WebP, com um máximo de 5 MB cada.</small></p>
+                <div id="image-preview-container" aria-live="polite"></div>
+            </div>
+
+            <button type="submit">Enviar relato</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PassBy. Mobilidade urbana mais inclusiva.</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        const mapElement = document.getElementById('map');
+        const mapMessage = document.getElementById('map-message');
+        const latitude = document.getElementById('latitude');
+        const longitude = document.getElementById('longitude');
+        let marker;
+
+        if (window.L) {
+            const map = L.map(mapElement).setView([39.6012, -8.8186], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            function selectLocation(position) {
+                latitude.value = position.lat.toFixed(6);
+                longitude.value = position.lng.toFixed(6);
+                if (marker) {
+                    marker.setLatLng(position);
+                } else {
+                    marker = L.marker(position).addTo(map);
+                }
+                mapMessage.textContent = 'Localização selecionada. Confirme o tipo de problema e descreva o que encontrou.';
+            }
+
+            map.on('click', (event) => selectLocation(event.latlng));
+
+            fetch('listar_marcadores.php')
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('Falha ao carregar os relatos.');
+                    }
+                    return response.json();
+                })
+                .then((reports) => {
+                    const labels = {
+                        acesso: 'Problema de acesso',
+                        estado: 'Mau estado de conservação',
+                        sinalizacao: 'Falta de sinalização',
+                        outro: 'Outro problema'
+                    };
+                    for (const report of reports) {
+                        const details = document.createElement('div');
+                        const title = document.createElement('strong');
+                        const description = document.createElement('p');
+                        title.textContent = labels[report.type] || 'Problema reportado';
+                        description.textContent = report.description;
+                        details.append(title, description);
+                        L.marker([report.latitude, report.longitude])
+                            .addTo(map)
+                            .bindPopup(details);
+                    }
+                })
+                .catch(() => {
+                    mapMessage.textContent = 'O mapa está disponível, mas não foi possível carregar os relatos existentes.';
+                });
+
+            document.getElementById('locate-me').addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    mapMessage.textContent = 'Este navegador não permite obter a localização. Clique diretamente no mapa.';
+                    return;
+                }
+                mapMessage.textContent = 'A obter a sua localização...';
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const point = L.latLng(position.coords.latitude, position.coords.longitude);
+                        selectLocation(point);
+                        map.setView(point, 17);
+                    },
+                    () => {
+                        mapMessage.textContent = 'Não foi possível obter a localização. Verifique as permissões ou clique diretamente no mapa.';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+        } else {
+            mapMessage.textContent = 'O mapa não ficou disponível. Atualize a página ou tente novamente mais tarde.';
+        }
+
+        document.getElementById('imagens').addEventListener('change', (event) => {
+            const input = event.currentTarget;
+            const preview = document.getElementById('image-preview-container');
+            preview.replaceChildren();
+            if (input.files.length > 3) {
+                input.setCustomValidity('Selecione no máximo 3 fotografias.');
+                input.reportValidity();
+                input.value = '';
+                return;
+            }
+
+            input.setCustomValidity('');
+            for (const file of input.files) {
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                    input.setCustomValidity('Cada fotografia deve ser JPG, PNG ou WebP e ter no máximo 5 MB.');
+                    input.reportValidity();
+                    input.value = '';
+                    preview.replaceChildren();
+                    return;
+                }
+
+                const image = document.createElement('img');
+                image.className = 'image-preview';
+                image.alt = `Pré-visualização de ${file.name}`;
+                image.src = URL.createObjectURL(file);
+                image.onload = () => URL.revokeObjectURL(image.src);
+                preview.appendChild(image);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto - PassBy</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <a class="brand" href="index.html" aria-label="PassBy - início">
+            <h1>PassBy</h1>
+            <p>Acessibilidade urbana, para todos.</p>
+        </a>
+    </header>
+    <nav>
+        <a href="index.html">Início</a>
+        <a href="sobre.html">Sobre Nós</a>
+        <a href="mapa.html">Mapa de Passadeiras</a>
+        <a href="redes.html">Redes sociais</a>
+        <a href="contato.html" class="active" aria-current="page">Contacto</a>
+    </nav>
+    <div class="container">
+        <h2>Vamos conversar.</h2>
+        <p>Organizações, entidades públicas e pessoas da comunidade: envie-nos uma mensagem.</p>
+
+        <form action="processar_contato.php" method="post" class="contact-form">
+            <div id="form-status" aria-live="polite"></div>
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" autocomplete="name" maxlength="120" required>
+
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" autocomplete="email" maxlength="254" required>
+
+            <label for="assunto">Assunto</label>
+            <input type="text" id="assunto" name="assunto" maxlength="160" required>
+
+            <label for="mensagem">Mensagem</label>
+            <textarea id="mensagem" name="mensagem" rows="5" maxlength="5000" required></textarea>
+
+            <div class="honeypot-field" aria-hidden="true">
+                <label for="website">Deixe este campo vazio</label>
+                <input type="text" id="website" name="honeypot" tabindex="-1" autocomplete="off">
+            </div>
+
+            <button type="submit">Enviar mensagem</button>
+        </form>
+    </div>
+    <footer>
+        <p>&copy; 2026 PassBy. Mobilidade urbana mais inclusiva.</p>
+    </footer>
+    <script>
+        const statusMessages = {
+            sent: ['Mensagem enviada com sucesso. Obrigado por entrar em contacto.', false],
+            error: ['Não foi possível enviar a mensagem. Verifique os dados e tente novamente.', true],
+            unavailable: ['O serviço de envio não está disponível neste momento. Tente novamente mais tarde.', true]
+        };
+        const status = new URLSearchParams(window.location.search).get('status');
+        if (statusMessages[status]) {
+            const message = document.createElement('p');
+            message.className = `form-status${statusMessages[status][1] ? ' error' : ''}`;
+            message.textContent = statusMessages[status][0];
+            document.getElementById('form-status').appendChild(message);
+        }
+    </script>
+</body>
+</html>
